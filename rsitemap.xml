@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension version="2.5" type="plugin" group="system" method="upgrade">
+	<name>rSitemap</name>
+	<author>Reach</author>
+	<creationDate>February 2018</creationDate>
+	<copyright>Copyright (C) 2018 Reach Web Agency. All rights reserved.</copyright>
+	<license>GNU General Public License</license>
+	<authorEmail>info@reach.gr</authorEmail>
+	<authorUrl>http://www.reach.gr</authorUrl>
+	<version>0.9.0</version>
+	<description>Simple XML sitemap generator, only for menu items. Use the parameter ?rsitemap=regen in the admin area to create the XML file in the root directory or just save a menu item.</description>
+	<files>
+		<filename plugin="rsitemap">rsitemap.php</filename>
+		<filename>composer.json</filename>
+		<folder>classes</folder>
+		<folder>vendor</folder>
+	</files>
+	<config>
+		<fields name="params">
+		</fields>
+	</config>	
+</extension>
