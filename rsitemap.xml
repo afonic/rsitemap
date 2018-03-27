@@ -17,6 +17,9 @@
 	</files>
 	<config>
 		<fields name="params">
+			<fieldset name="basic" >
+				<field name="ignoremenus" type="menu" multiple="true" label="Ignore menus" description="Ignore menus" />
+			</fieldset>
 		</fields>
 	</config>	
 </extension>

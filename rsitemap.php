@@ -11,26 +11,23 @@ use Reach\rSitemap;
 // Initiate class to hold plugin events
 class plgSystemRSitemap extends JPlugin
 {
+    public function onAfterInitialise()
+    {
+        $app = JFactory::getApplication();
 
-    function onAfterInitialise() {
-
-        $app = JFactory::getApplication();      
-
-        if ($app->isAdmin() and ($app->input->get('rsitemap') == 'regen')) {
-        	$r = new rSitemap;
-	        $r->saveFile();
-
-        }
+        //if ($app->isAdmin() and ($app->input->get('rsitemap') == 'regen')) {
+            $r = new rSitemap($this->params['ignoremenus']);
+            $r->saveFile();
+        //}
     }
 
 
-    function onContentAfterSave($context, $article, $isNew)
-	{
-		if ($context = 'com_menus.item') {
-			$r = new rSitemap;
-	        $r->saveFile();
-		}
-		return true;
-	}
-
+    public function onContentAfterSave($context, $article, $isNew)
+    {
+        if ($context = 'com_menus.item') {
+            $r = new rSitemap($this->params['ignoremenus']);
+            $r->saveFile();
+        }
+        return true;
+    }
 } // END CLASS
