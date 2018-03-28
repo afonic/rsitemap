@@ -20,7 +20,7 @@ class rSitemap
         } else {
             $this->multiLanguage = false;
         }
-        $this->ignoreMenus = $ignoreMenus;
+        $this->ignoreMenus = is_array($ignoreMenus) ? $ignoreMenus : [];
     }
 
     // Gets the languages and creates an array

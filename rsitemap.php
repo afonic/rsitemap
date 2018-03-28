@@ -15,10 +15,10 @@ class plgSystemRSitemap extends JPlugin
     {
         $app = JFactory::getApplication();
 
-        //if ($app->isAdmin() and ($app->input->get('rsitemap') == 'regen')) {
+        if ($app->isAdmin() and ($app->input->get('rsitemap') == 'regen')) {
             $r = new rSitemap($this->params['ignoremenus']);
             $r->saveFile();
-        //}
+        }
     }
 
 
