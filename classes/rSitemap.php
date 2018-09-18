@@ -2,8 +2,10 @@
 
 namespace Reach;
 
+use Joomla\CMS\Language\Language;
 use Joomla\CMS\Language\LanguageHelper;
 use Joomla\CMS\Menu\SiteMenu;
+use Joomla\CMS\Plugin\PluginHelper;
 
 // What do we need to generate a sitemap
 class rSitemap
@@ -27,14 +29,18 @@ class rSitemap
     public function getLanguages()
     {
         $languages = LanguageHelper::getContentLanguages();
+        $defaultLanguage = (new Language)->getDefault();
 
         foreach ($languages as $language) {
             if ($language->published == '1') {
                 $lang = new \stdClass;
                 $lang->code = $language->lang_code;
-                $lang->url = $language->sef;
+                if (($language->lang_code == $defaultLanguage) && ($this->noPrefixForDefaultLanguage())) {
+                    $lang->url = '';
+                } else {
+                    $lang->url = $language->sef.'/';
+                }                
             }
-
             $useLanguages[] = $lang;
         }
 
@@ -68,13 +74,25 @@ class rSitemap
         return $realItems;
     }
 
+    // Check if we have disabled prefix for the default language
+    public function noPrefixForDefaultLanguage() 
+    {
+        $filterPlugin = PluginHelper::getPlugin('system', 'languagefilter');
+        if (!empty($filterPlugin)) {
+            $filterPluginParams  = new \JRegistry($filterPlugin->params);
+            if ($filterPluginParams->get('remove_default_prefix') == '1') {
+                return true;
+            }
+        }
+        return false;
+    }
 
     // Add the attributes for the xhtml:link
     public function addLinkAttribute($locale, $code, $sef, $route = null)
     {
         $locale->addAttribute('rel', 'alternate');
         $locale->addAttribute('hreflang', $code);
-        $locale->addAttribute('href', \JURI::root().$sef.'/'.$route);
+        $locale->addAttribute('href', \JURI::root().$sef.$route);
     }
 
     // Add the XML for the homepage
@@ -102,7 +120,7 @@ class rSitemap
     {
         foreach ($this->getLanguages() as $language) {
             foreach ($this->getMenuItems() as $item) {
-                $fullPath = \JURI::root().($this->multiLanguage ? $language->url.'/' : null).$item->route;
+                $fullPath = \JURI::root().($this->multiLanguage ? $language->url : null).$item->route;
                 $url = $this->xml->addChild('url');
                 $url->addChild('loc', $fullPath);
                 if ($this->multiLanguage) {
