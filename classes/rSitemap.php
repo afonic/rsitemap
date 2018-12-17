@@ -2,10 +2,10 @@
 
 namespace Reach;
 
-use Joomla\CMS\Language\Language;
 use Joomla\CMS\Language\LanguageHelper;
 use Joomla\CMS\Menu\SiteMenu;
 use Joomla\CMS\Plugin\PluginHelper;
+use Joomla\CMS\Component\ComponentHelper;
 
 // What do we need to generate a sitemap
 class rSitemap
@@ -29,25 +29,36 @@ class rSitemap
     public function getLanguages()
     {
         $languages = LanguageHelper::getContentLanguages();
-        $defaultLanguage = (new Language)->getDefault();
+        $defaultLanguage = ComponentHelper::getParams('com_languages')->get('site');
 
         foreach ($languages as $language) {
             if ($language->published == '1') {
                 $lang = new \stdClass;
+                $lang->id = $language->lang_id;
                 $lang->code = $language->lang_code;
                 if (($language->lang_code == $defaultLanguage) && ($this->noPrefixForDefaultLanguage())) {
                     $lang->url = '';
+                    $lang->default = 1;
                 } else {
                     $lang->url = $language->sef.'/';
+                    $lang->default = 0;
                 }                
             }
             $useLanguages[] = $lang;
         }
 
+        usort($useLanguages, array($this, "cmp"));
+
         if ($useLanguages) {
             return $useLanguages;
         }
         return false;
+    }
+    
+    // Helper function to sort array based on object value
+    public function cmp($a, $b)
+    {
+        return $a->default < $b->default;
     }
 
     // Gets all menu items
@@ -72,6 +83,36 @@ class rSitemap
             endswitch;
         }
         return $realItems;
+    }
+    
+    // Get an array of objects from the Falang translations of the menu items
+    public function getFalangRouteArray($lang_id)
+    {
+        if (! ComponentHelper::getComponent('com_falang', true)->enabled) {
+            return false;
+        }
+        $db = \JFactory::getDbo();
+        $query = $db->getQuery(true);
+        $query->select(['reference_id', 'value']);
+        $query->from('#__falang_content');
+        $query->where($db->quoteName('language_id') . ' = '. $db->quote($lang_id));
+        $query->where($db->quoteName('reference_table') . ' LIKE '. $db->quote('menu'));
+        $query->where($db->quoteName('reference_field') . ' LIKE '. $db->quote('path'));
+        $query->where($db->quoteName('published') . ' = '. 1);
+        $rows = $db->setQuery($query);
+        return $db->loadObjectList('reference_id');
+    }
+    
+    // Used to replace the route if a falang translation is active
+    public function getRoute($menuItem, $language)
+    {
+        if ($language->default == 1) {
+            return $menuItem->route;
+        }
+        $falang = $this->getFalangRouteArray($language->id);
+        if (isset($falang[$menuItem->id])) {
+            return $falang[$menuItem->id]->value;
+        }
     }
 
     // Check if we have disabled prefix for the default language
@@ -120,7 +161,7 @@ class rSitemap
     {
         foreach ($this->getLanguages() as $language) {
             foreach ($this->getMenuItems() as $item) {
-                $fullPath = \JURI::root().($this->multiLanguage ? $language->url : null).$item->route;
+                $fullPath = \JURI::root().($this->multiLanguage ? $language->url : null).$this->getRoute($item, $language);
                 $url = $this->xml->addChild('url');
                 $url->addChild('loc', $fullPath);
                 if ($this->multiLanguage) {
@@ -128,11 +169,11 @@ class rSitemap
                     foreach ($this->getLanguages() as $link) {
                         if ($link != $language) {
                             $locale = $url->addChild('xhtml:link', null, 'http://www.w3.org/1999/xhtml');
-                            $this->addLinkAttribute($locale, $link->code, $link->url, $item->route);
+                            $this->addLinkAttribute($locale, $link->code, $link->url, $this->getRoute($item, $link));
                         }
                     }
                     $locale = $url->addChild('xhtml:link', null, 'http://www.w3.org/1999/xhtml');
-                    $this->addLinkAttribute($locale, $language->code, $language->url, $item->route);
+                    $this->addLinkAttribute($locale, $language->code, $language->url, $this->getRoute($item, $language));
                 }
             }
         }
